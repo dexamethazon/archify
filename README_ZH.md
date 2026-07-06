@@ -12,6 +12,8 @@ Archify 是一个可用于 Claude、Codex CLI 和 opencode 的 agent skill：你
 - **一键复制到剪贴板** —— 直接贴到 Slack、飞书、微信、Notion、GitHub issue
 - **导出图片超清晰** —— PNG / JPEG / WebP 全部由浏览器在最高 4× 源分辨率下**原生光栅化**（不是位图放大，没有糊），或导出 SVG 做真矢量
 - **SVG 自动跟系统深浅色** —— 导出的 SVG 内嵌两套变量 + `@media (prefers-color-scheme)`，贴到 GitHub README 里，读者切深浅色图跟着切（不用两张 PNG + `<picture>` 包起来）
+- **内置质量闭环** —— renderer 驱动的图会经过 JSON schema 校验、布局检查、HTML/SVG artifact 检查，再做定向迭代
+- **语义技术标签** —— 可以把组件写成 `aws.lambda`、`postgres`、`redis`、`github-actions`、`openai` 等；Archify 会把它们映射到合适的视觉类别，不需要完整图标库
 - **单文件 HTML** —— 生成的 HTML 零运行时依赖，发一个文件就能分享
 - **聊天迭代** —— "把 Redis 挪到左边"、"鉴权服务换成玫红"、"加个 Kafka"
 
@@ -188,13 +190,21 @@ cd ~/.agents/skills/archify && npm install
 
 没装依赖时渲染器会跳过 schema 校验（布局检查仍然运行）。
 
-对渲染器生成的图，skill 还会跑一次生成后检查：
+renderer 驱动的图在交付前会走一个小质量闭环：
+
+| 步骤 | 做什么 |
+|---|---|
+| **生成 JSON IR** | agent 先写 architecture / workflow / sequence / dataflow / lifecycle 的类型化描述，而不是直接手改最终 SVG。 |
+| **Validate** | 安装依赖后由 `ajv` 检查 JSON schema；没装依赖时仍会跑布局检查。 |
+| **Render** | 类型化渲染器生成单文件 HTML/SVG。 |
+| **Check artifact** | 生成后检查器拦截 malformed SVG、非有限坐标、误生成的两点斜线箭头、穿过图例的连线。 |
+| **Iterate** | 修复尽量落在 JSON IR 或语义 class 上，局部调整不需要整张图从头生成。 |
+
+也可以直接运行最终 artifact 检查：
 
 ```bash
 node scripts/check-render-output.mjs output.html
 ```
-
-这道最终闸门会检查 HTML/SVG 是否结构异常、SVG 是否出现非有限值、是否误生成两点斜线箭头，以及箭头是否穿过图例。
 
 内置 CLI 对这些 renderer / checker 命令做了一层统一包装：
 
@@ -369,12 +379,28 @@ Trace animation 直接运行在生成的 HTML/SVG 里：箭头按顺序流动，
 
 每种颜色在深色 / 浅色主题下都有配套取值，切主题会同步切换。
 
+### 语义技术标签
+
+Archify 不是要内置完整 AWS / Azure / GCP 图标运行时。它把技术名和可选标签当成语义提示，用来辅助配色、分组和文案：
+
+| 标签示例 | 视觉类别 |
+|---|---|
+| `react`、`nextjs`、`ios`、`android`、`browser` | Frontend |
+| `node`、`go-service`、`python-worker`、`api-gateway` | Backend |
+| `postgres`、`mysql`、`redis`、`s3`、`bigquery`、`snowflake` | Database / storage |
+| `aws.lambda`、`aws.cloudfront`、`gcp.pubsub`、`azure.functions`、`kubernetes` | Cloud / infrastructure |
+| `auth0`、`cognito`、`oauth`、`vault`、`security-group` | Security |
+| `kafka`、`rabbitmq`、`sns`、`sqs`、`nats` | Message bus |
+| `stripe`、`github-actions`、`openai`、`anthropic`、`slack` | External |
+
+当具体技术栈重要时，可以在 prompt 或 JSON IR 里写这些标签。最终输出仍然是自持 HTML/SVG；标签只增强语义样式和布局，不引入重型图标依赖。
+
 ## 实现细节
 
 - **样式模型**：`:root` + `[data-theme="light"]` 上的 CSS 变量；SVG 元素引用语义 class（`c-frontend`、`t-muted`、`a-emphasis` 等）。切换 `<html>` 上的 `data-theme` 会重写包括渐变、网格、箭头、遮罩在内的整张图。
 - **导出流水线**：克隆 SVG，内联 host `<style>`，解析当前主题变量并写入 clone 的 `:root` 规则，然后用 `XMLSerializer` 序列化。光栅格式下，clone 的 `width`/`height` 被设为 `4 × viewBox`，浏览器按目标分辨率原生光栅化矢量；canvas 尺寸对齐 clone 后按自然大小绘制（无位图升采样），`toBlob(mime)` 生成文件。JPEG 会显式补背景色（无 alpha）。如果目标分辨率超过浏览器 canvas 上限，自动降到 3× 或 2×。
 - **单文件**：一个 HTML，一个 Google Fonts `<link>`，内联 SVG，约 19 KB 嵌入 JS。生成的 HTML 零运行时依赖 —— 无构建步骤、无 JS 框架、无服务端（渲染器本身需要 `npm install`，见安装章节）。
-- **生成后检查**：`bin/archify.mjs validate` 和 `scripts/check-render-output.mjs` 在交付前检查生成的 HTML：单 SVG、SVG 坐标有限、没有误生成两点斜线箭头、箭头线段不穿过图例。
+- **生成后检查**：`bin/archify.mjs validate`、渲染器布局检查和 `scripts/check-render-output.mjs` 会在交付前检查生成的图：有依赖时检查 schema、SVG 坐标有限、没有误生成两点斜线箭头、箭头线段不穿过图例。
 - **浏览器支持**：任何主流浏览器（Chrome、Safari、Firefox、Edge）。WebP 导出需要 canvas 支持 `image/webp`。
 
 ## 致谢

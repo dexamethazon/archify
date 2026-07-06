@@ -12,6 +12,8 @@ Archify is an agent skill for Claude, Codex CLI, and opencode. It turns a plain-
 - **Copy PNG to clipboard** — one click, paste straight into Slack / Notion / GitHub
 - **Ultra-crisp image export** — PNG / JPEG / WebP rendered natively at up to 4× source resolution (no upsampling blur), or SVG for true vector
 - **SVG follows system dark/light** — exported SVGs ship with both variable sets + `@media (prefers-color-scheme)`, so dropping one into a GitHub README makes it follow the reader's color preference (no more two PNGs wrapped in `<picture>`)
+- **Validation loop built in** — renderer-backed diagrams go through JSON schema validation, layout checks, HTML/SVG artifact checks, and targeted iteration
+- **Semantic tech labels** — describe components as `aws.lambda`, `postgres`, `redis`, `github-actions`, `openai`, etc.; Archify maps them to the right visual category without needing a full icon library
 - **Self-contained HTML** — the generated file has zero dependencies, share by sending it
 - **Iterate by chat** — "add Redis", "move auth to the left", "use emerald for the API"
 
@@ -184,13 +186,21 @@ cd ~/.agents/skills/archify && npm install
 
 Without the dependency the renderers skip schema validation (layout checks still run).
 
-For renderer-backed diagrams, the skill also runs a post-render artifact check:
+Renderer-backed diagrams follow a small quality loop before delivery:
+
+| Step | What happens |
+|---|---|
+| **Generate JSON IR** | The agent writes a typed architecture / workflow / sequence / dataflow / lifecycle description instead of hand-editing the final SVG. |
+| **Validate** | `ajv` checks the JSON schema when dependencies are installed; layout checks still run without it. |
+| **Render** | The typed renderer produces the self-contained HTML/SVG output. |
+| **Check artifact** | The post-render checker catches malformed SVG, non-finite coordinates, accidental diagonal arrows, and legend-crossing routes. |
+| **Iterate** | Fixes are made against the JSON IR or semantic classes, so targeted edits do not require regenerating the whole diagram from scratch. |
+
+You can run the final artifact check directly:
 
 ```bash
 node scripts/check-render-output.mjs output.html
 ```
-
-That final gate inspects the generated HTML/SVG for malformed output, non-finite SVG values, accidental two-point diagonal arrows, and arrows crossing the legend.
 
 The bundled CLI wraps the same renderer and checker commands:
 
@@ -364,12 +374,28 @@ Use archify to draw a lifecycle diagram:
 
 Each color has coordinated dark-mode and light-mode variants that switch together via the theme toggle.
 
+### Semantic tech labels
+
+Archify is not trying to ship a complete AWS / Azure / GCP icon runtime. Instead, it treats technology names and optional labels as semantic hints that guide color, grouping, and copy:
+
+| Label examples | Visual category |
+|---|---|
+| `react`, `nextjs`, `ios`, `android`, `browser` | Frontend |
+| `node`, `go-service`, `python-worker`, `api-gateway` | Backend |
+| `postgres`, `mysql`, `redis`, `s3`, `bigquery`, `snowflake` | Database / storage |
+| `aws.lambda`, `aws.cloudfront`, `gcp.pubsub`, `azure.functions`, `kubernetes` | Cloud / infrastructure |
+| `auth0`, `cognito`, `oauth`, `vault`, `security-group` | Security |
+| `kafka`, `rabbitmq`, `sns`, `sqs`, `nats` | Message bus |
+| `stripe`, `github-actions`, `openai`, `anthropic`, `slack` | External |
+
+Use these labels in prompts or JSON IR when the exact technology matters. The generated diagram stays self-contained HTML/SVG; the labels improve semantic styling and layout without forcing a heavyweight icon dependency.
+
 ## Technical details
 
 - **Styling:** CSS custom properties on `:root` + `[data-theme="light"]`; SVG elements reference semantic classes (`c-frontend`, `t-muted`, `a-emphasis`, etc.). Toggling `data-theme` on `<html>` re-themes the entire diagram including gradient, grid, arrows, and mask rects.
 - **Export pipeline:** The SVG is cloned, host `<style>` is inlined, and current theme variables are resolved and written into a `:root` rule on the clone. For raster formats the clone's `width`/`height` are set to `4 × viewBox` so the browser rasterizes the vectors at target resolution natively; the canvas is sized to match and the image is drawn at natural size (no bitmap upsampling). `toBlob(mime)` then produces the file. JPEG gets an explicit background fill since it has no alpha. If the target resolution would exceed the browser's canvas limits, the pipeline automatically falls back to 3× or 2× so the export still succeeds.
 - **Self-contained output:** Single HTML file, Google Fonts link + inline SVG + ~19 KB of embedded JS. No build step, no JS framework, no server — the generated HTML itself has zero dependencies (the typed renderers need `npm install` for ajv, see [Install](#1-install-the-skill)).
-- **Output checks:** `bin/archify.mjs validate` and `scripts/check-render-output.mjs` validate generated HTML before delivery: one SVG, finite SVG values, no accidental two-point diagonal arrows, and no arrow segments crossing the legend.
+- **Output checks:** `bin/archify.mjs validate`, renderer layout checks, and `scripts/check-render-output.mjs` validate generated diagrams before delivery: schema validity when available, finite SVG values, no accidental two-point diagonal arrows, and no arrow segments crossing the legend.
 - **Browser support:** Any modern browser (Chrome, Safari, Firefox, Edge). Needs `Image` + `canvas.toBlob` with `image/webp` support for WebP export.
 
 ## Attribution
