@@ -10,13 +10,19 @@ out="${1:-$repo_root/archify.zip}"
 # harness compares against ../examples at the repo root, which does not exist
 # in an installed skill); local agent coordination folders are also excluded so
 # a developer's working tree cannot leak into the distributable archive. The npm
-# scripts that point at test/ are stripped from the shipped package.json so
-# `npm test` can't crash for skill users.
+# scripts and build-only dependencies are stripped from the shipped
+# package.json. Runtime schema validation is provided by the committed
+# standalone validators, so installing the skill never requires npm install.
 stage="$(mktemp -d)"
 trap 'rm -rf "$stage"' EXIT
+if [[ ! -f "$repo_root/archify/renderers/shared/generated-validators.mjs" ]]; then
+  echo 'generated validators are missing — run npm run generate:validators in archify/' >&2
+  exit 1
+fi
 rsync -a \
   --exclude 'node_modules' \
   --exclude 'test' \
+  --exclude 'scripts/generate-validators.mjs' \
   --exclude '.DS_Store' \
   --exclude '.hive' \
   --exclude '.workbuddy' \
@@ -26,8 +32,10 @@ node -e "
   const p = '$stage/archify/package.json';
   const pkg = JSON.parse(fs.readFileSync(p, 'utf8'));
   delete pkg.scripts;
+  delete pkg.devDependencies;
   fs.writeFileSync(p, JSON.stringify(pkg, null, 2) + '\n');
 "
+rm -f "$stage/archify/package-lock.json"
 
 rm -f "$out"
 (cd "$stage" && zip -r -X -q "$out" archify)

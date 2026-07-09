@@ -462,27 +462,27 @@
         <div>
           <div class="section-label fade-up" data-i18n="label-qs">Quick Start</div>
           <h2 class="section-heading fade-up d1" data-i18n="qs-h2">Up and running<br>in three steps.</h2>
-          <p class="section-body fade-up d2" style="margin-bottom:2.5rem" data-i18n="qs-body">Works with Claude, Codex CLI, and opencode.</p>
+          <p class="section-body fade-up d2" style="margin-bottom:2.5rem" data-i18n="qs-body">One command for Claude Code, Codex, or opencode. Or try it with a temporary copy.</p>
           <div class="steps">
             <div class="step fade-up d1">
               <div class="step-num">1</div>
               <div class="step-content">
-                <h4 data-i18n="step1-h">Install the Skill</h4>
-                <p data-i18n="step1-p">Download <a href="https://github.com/tt-a1i/archify/raw/main/archify.zip">archify.zip</a>. Upload it in Claude Settings, or unzip it for CLI agents: ~/.claude/skills/ for Claude Code, ~/.agents/skills/ for Codex, ~/.config/opencode/skills/ or .opencode/skills/ for opencode.</p>
+                <h4 data-i18n="step1-h">Install in one command</h4>
+                <p data-i18n="step1-p">Run <code>npx skills add tt-a1i/archify -g</code>, then select your agent. To try it without a permanent install, use <code>npx skills use tt-a1i/archify@archify --agent codex</code>.</p>
               </div>
             </div>
             <div class="step fade-up d2">
               <div class="step-num">2</div>
               <div class="step-content">
                 <h4 data-i18n="step2-h">Describe your system</h4>
-                <p data-i18n="step2-p">Write a plain-English description of your architecture — components, connections, cloud services. Or ask Claude to analyze your codebase first.</p>
+                <p data-i18n="step2-p">Describe components, connections, and cloud services — or ask your agent to analyze the repository first.</p>
               </div>
             </div>
             <div class="step fade-up d3">
               <div class="step-num">3</div>
               <div class="step-content">
-                <h4 data-i18n="step3-h">Ask Claude to draw it</h4>
-                <p data-i18n="step3-p">Tell Claude to use the Archify skill. It generates a self-contained HTML file you open in any browser. Iterate from there — in plain English.</p>
+                <h4 data-i18n="step3-h">Ask your agent to draw it</h4>
+                <p data-i18n="step3-p">Tell your agent to use Archify. It generates a self-contained HTML file you can open in any browser and refine in chat.</p>
               </div>
             </div>
           </div>
@@ -494,36 +494,50 @@
               <div class="code-bar-dots"><span class="d-red"></span><span class="d-amber"></span><span class="d-green"></span></div>
               <span class="code-bar-label" data-i18n="code-label">example prompt</span>
             </div>
-            <div class="code-body" id="code-en"><span class="cmt"># Step 2 — describe your system</span>
-<span class="kw">Architecture:</span>
-- React frontend
-- Node.js/Express API
-- PostgreSQL database
-- Redis cache
-- JWT authentication
-- AWS + CloudFront CDN
+            <div class="code-body" id="code-en"><span class="cmt"># Step 1 — install globally</span>
+npx skills add tt-a1i/archify -g
 
-<span class="cmt"># Step 3 — ask Claude</span>
-<span class="str">Use your archify skill to create
-an architecture diagram from
-this description.</span>
+<span class="cmt"># Or try with Codex, without a permanent install</span>
+npx skills use tt-a1i/archify@archify --agent codex
+
+<span class="cmt"># Prompt 1 — map a real repository</span>
+<span class="str">Analyze this repository, then use archify
+to map its runtime components, data flow,
+external dependencies, and trust boundaries.</span>
+
+<span class="cmt"># Prompt 2 — explain a request path</span>
+<span class="str">Use archify to draw: Browser -> Web App
+-> API -> JWT -> Redis -> PostgreSQL fallback.
+Show the cache-miss path clearly.</span>
+
+<span class="cmt"># Prompt 3 — visualize delivery</span>
+<span class="str">Use archify to draw: PR -> tests -> approval
+-> build -> staging -> smoke test -> production,
+with rollback on failure.</span>
 
 <span class="cmt"># Iterate by chat</span>
 <span class="str">"Add a Kafka message bus"
 "Move Redis next to the DB"
 "Use rose for the auth path"</span></div>
-            <div class="code-body" id="code-zh" style="display:none"><span class="cmt"># 第 2 步 — 描述你的系统</span>
-<span class="kw">架构：</span>
-- React 前端
-- Node.js/Express API
-- PostgreSQL 数据库
-- Redis 缓存
-- JWT 鉴权
-- AWS + CloudFront CDN
+            <div class="code-body" id="code-zh" style="display:none"><span class="cmt"># 第 1 步 — 全局安装</span>
+npx skills add tt-a1i/archify -g
 
-<span class="cmt"># 第 3 步 — 让 Claude 绘制</span>
-<span class="str">用 Archify 技能，根据以上描述
-生成一张架构图。</span>
+<span class="cmt"># 或者用临时副本启动 Codex</span>
+npx skills use tt-a1i/archify@archify --agent codex
+
+<span class="cmt"># Prompt 1 — 梳理真实仓库</span>
+<span class="str">分析这个仓库，然后用 archify 展示运行时组件、
+数据流、外部依赖和信任边界。</span>
+
+<span class="cmt"># Prompt 2 — 解释请求链路</span>
+<span class="str">用 archify 画出：浏览器 -> Web App -> API
+-> JWT -> Redis -> PostgreSQL 回退，
+清楚标出缓存未命中路径。</span>
+
+<span class="cmt"># Prompt 3 — 展示交付流程</span>
+<span class="str">用 archify 画出：PR -> 测试 -> 审批 -> 构建
+-> staging -> 冒烟测试 -> production，
+失败时进入回滚路径。</span>
 
 <span class="cmt"># 对话式迭代</span>
 <span class="str">"加一个 Kafka 消息总线"
@@ -615,10 +629,10 @@ this description.</span>
       'chip-external':'External','chip-external-use':'Users, 3rd parties, generic',
       'label-qs':'Quick Start',
       'qs-h2':'Up and running<br>in three steps.',
-      'qs-body':'Works with Claude, Codex CLI, and opencode.',
-      'step1-h':'Install the Skill','step1-p':'Download <a href="https://github.com/tt-a1i/archify/raw/main/archify.zip">archify.zip</a>. Upload it in Claude Settings, or unzip it for CLI agents: ~/.claude/skills/ for Claude Code, ~/.agents/skills/ for Codex, ~/.config/opencode/skills/ or .opencode/skills/ for opencode.',
-      'step2-h':'Describe your system','step2-p':'Write a plain-English description of your architecture — components, connections, cloud services. Or ask Claude to analyze your codebase first.',
-      'step3-h':'Ask Claude to draw it','step3-p':'Tell Claude to use the Archify skill. It generates a self-contained HTML file you open in any browser. Iterate from there — in plain English.',
+      'qs-body':'One command for Claude Code, Codex, or opencode. Or try it with a temporary copy.',
+      'step1-h':'Install in one command','step1-p':'Run <code>npx skills add tt-a1i/archify -g</code>, then select your agent. To try it without a permanent install, use <code>npx skills use tt-a1i/archify@archify --agent codex</code>.',
+      'step2-h':'Describe your system','step2-p':'Describe components, connections, and cloud services — or ask your agent to analyze the repository first.',
+      'step3-h':'Ask your agent to draw it','step3-p':'Tell your agent to use Archify. It generates a self-contained HTML file you can open in any browser and refine in chat.',
       'code-label':'example prompt',
       'kbd-label':'Keyboard shortcuts','kbd-theme':'Toggle theme','kbd-export':'Open export menu','kbd-nav':'Navigate menu','kbd-close':'Close menu',
       'footer-meta':'v2.10.0 &nbsp;·&nbsp; MIT License<br>Based on Cocoon-AI/architecture-diagram-generator',
@@ -671,10 +685,10 @@ this description.</span>
       'chip-external':'外部系统','chip-external-use':'用户、第三方、通用外部',
       'label-qs':'快速开始',
       'qs-h2':'三步上手，<br>即刻运行。',
-      'qs-body':'支持 Claude、Codex CLI 和 opencode。',
-      'step1-h':'安装技能','step1-p':'下载 <a href="https://github.com/tt-a1i/archify/raw/main/archify.zip">archify.zip</a>。Claude 可在设置里上传；CLI agent 可解压到对应目录：Claude Code 用 ~/.claude/skills/，Codex 用 ~/.agents/skills/，opencode 用 ~/.config/opencode/skills/ 或 .opencode/skills/。',
-      'step2-h':'描述你的系统','step2-p':'用自然语言描述你的架构——组件、连接关系、云服务。也可以先让 Claude 分析你的代码仓库。',
-      'step3-h':'让 Claude 绘制','step3-p':'告诉 Claude 使用 Archify 技能，它会生成独立的 HTML 文件，用任意浏览器打开即可。然后继续用自然语言迭代。',
+      'qs-body':'一条命令用于 Claude Code、Codex 或 opencode，也可以先用临时副本试用。',
+      'step1-h':'一条命令安装','step1-p':'运行 <code>npx skills add tt-a1i/archify -g</code>，然后选择使用的 agent。不想常驻安装，可运行 <code>npx skills use tt-a1i/archify@archify --agent codex</code>。',
+      'step2-h':'描述你的系统','step2-p':'描述组件、连接关系和云服务，也可以先让 agent 分析代码仓库。',
+      'step3-h':'让 agent 绘制','step3-p':'告诉 agent 使用 Archify，它会生成可在任意浏览器打开的单文件 HTML，并可继续在对话中迭代。',
       'code-label':'示例提示词',
       'kbd-label':'键盘快捷键','kbd-theme':'切换主题','kbd-export':'打开导出菜单','kbd-nav':'菜单导航','kbd-close':'关闭菜单',
       'footer-meta':'v2.10.0 &nbsp;·&nbsp; MIT 许可证<br>基于 Cocoon-AI/architecture-diagram-generator',

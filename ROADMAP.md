@@ -94,7 +94,7 @@ The experiment tested whether auto-layout (dagre) + archify CSS (version B) look
 ### Current status
 
 - Architecture, workflow, sequence, data-flow, and lifecycle renderers ship under `archify/renderers/`.
-- `schema_version: 1` is documented in `archify/schemas/README.md`; schemas are enforced with ajv when dependencies are installed.
+- `schema_version: 1` is documented in `archify/schemas/README.md`; schemas are precompiled with ajv during development and always enforced at runtime by the dependency-free standalone validators shipped with the skill.
 - `SKILL.md` documents Mermaid as an accepted input dialect through prompt engineering, not a parser.
 - README describes the current install and usage surfaces; the bundled CLI wraps renderer, validate, check, and example-generation commands.
 

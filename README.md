@@ -25,6 +25,14 @@ Archify is an agent skill for Claude, Codex CLI, and opencode. It turns a plain-
 
 <p align="right"><a href="./README_ZH.md">中文</a></p>
 
+**Start in 60 seconds:**
+
+```bash
+npx skills add tt-a1i/archify -g
+```
+
+Then ask your agent: `Use archify to map this repository's runtime architecture.`
+
 ## Preview
 
 Same diagram, two themes, one click to switch:
@@ -139,7 +147,49 @@ Archify is based on [Cocoon-AI/architecture-diagram-generator](https://github.co
 
 ## Quick start
 
-### 1. Install the skill
+### 1. Install in one command
+
+Install Archify globally, then select your agent when prompted:
+
+```bash
+npx skills add tt-a1i/archify -g
+```
+
+Want to try it without a permanent install? This starts Codex with a temporary copy of the skill:
+
+```bash
+npx skills use tt-a1i/archify@archify --agent codex
+```
+
+Replace `codex` with `claude-code` or `opencode` to start either of those agents instead. These commands use the open-source [`skills` CLI](https://github.com/vercel-labs/skills).
+
+### 2. Copy one prompt
+
+**Map a real repository:**
+
+```text
+Analyze this repository, then use archify to create an architecture diagram of its runtime components, data flow, external dependencies, and trust boundaries.
+```
+
+**Explain a request path:**
+
+```text
+Use archify to draw this login flow: Browser -> Web App -> API -> JWT validation -> Redis session lookup -> PostgreSQL fallback. Show the cache-miss path clearly.
+```
+
+**Visualize delivery:**
+
+```text
+Use archify to create a CI/CD workflow diagram: pull request -> tests -> approval gate -> build image -> staging deploy -> smoke test -> production deploy, with rollback on failure.
+```
+
+The distributed skill includes standalone Schema validators, so it is ready to render immediately — no `npm install` or runtime dependencies required.
+
+### 3. Iterate in chat
+
+Ask for focused changes such as `add Redis`, `move auth to the left`, or `highlight the rollback path`. Archify returns a self-contained HTML file you can open in any browser and export as PNG, JPEG, WebP, or SVG.
+
+### Other installation methods
 
 Archify is packaged as an agent skill directory (`archify/SKILL.md`), so the same [`archify.zip`](archify.zip) works with Claude, Codex CLI, and opencode.
 
@@ -179,20 +229,12 @@ unzip archify.zip -d ./.opencode/skills/
 unzip archify.zip -d ~/.agents/skills/
 ```
 
-The typed renderers (architecture / workflow / sequence / dataflow / lifecycle) rely on ajv for schema validation, which takes a one-time `npm install` in the installed skill directory. Many agent runtimes can run it automatically on first use, following the Setup instructions in `SKILL.md` — or run it yourself:
-
-```bash
-cd ~/.agents/skills/archify && npm install
-```
-
-Without the dependency the renderers skip schema validation (layout checks still run).
-
 Renderer-backed diagrams follow a small quality loop before delivery:
 
 | Step | What happens |
 |---|---|
 | **Generate JSON IR** | The agent writes a typed architecture / workflow / sequence / dataflow / lifecycle description instead of hand-editing the final SVG. |
-| **Validate** | `ajv` checks the JSON schema when dependencies are installed; layout checks still run without it. |
+| **Validate** | Bundled standalone validators check the JSON Schema with no runtime dependency installation. |
 | **Render** | The typed renderer produces the self-contained HTML/SVG output. |
 | **Check artifact** | The post-render checker catches malformed SVG, non-finite coordinates, accidental diagonal arrows, and legend-crossing routes. |
 | **Iterate** | Fixes are made against the JSON IR or semantic classes, so targeted edits do not require regenerating the whole diagram from scratch. |
@@ -206,6 +248,8 @@ node scripts/check-render-output.mjs output.html
 The bundled CLI wraps the same renderer and checker commands:
 
 ```bash
+node bin/archify.mjs doctor
+node bin/archify.mjs demo /tmp/archify-demo
 node bin/archify.mjs render workflow examples/agent-tool-call.workflow.json workflow.html
 node bin/archify.mjs validate workflow examples/agent-tool-call.workflow.json --json
 node bin/archify.mjs check workflow.html
@@ -230,42 +274,8 @@ What each install surface can do:
 | **Claude Code** | Full — runs the typed renderers + schema validation |
 | **Codex CLI** | Full — install to `~/.agents/skills/` or `.agents/skills/` |
 | **opencode** | Full — install to `.opencode/skills/`, `.agents/skills/`, or another supported skills directory |
-| **Claude.ai (zip upload)** | Usually full — depends on whether the sandbox can `npm install`, which it typically can |
+| **Claude.ai (zip upload)** | Usually full — depends on whether the sandbox allows Node.js execution |
 | **Project Knowledge** | Architecture mode only — no code execution, purely prompt-driven |
-
-### 2. Describe your system
-
-Any of these work:
-
-**Have AI analyze your codebase:**
-```
-Analyze this codebase and describe the architecture. Include all major
-components, how they connect, what technologies they use, and any cloud
-services or integrations. Format as a list for an architecture diagram.
-```
-
-**Write it yourself:**
-```
-- React frontend talking to a Node.js API
-- PostgreSQL database
-- Redis for caching
-- Hosted on AWS with CloudFront CDN
-```
-
-**Or ask for a typical architecture:**
-```
-What's a typical architecture for a SaaS application?
-```
-
-### 3. Ask Claude to use the skill
-
-```
-Use your archify skill to create an architecture diagram from this description:
-
-[PASTE YOUR ARCHITECTURE DESCRIPTION HERE]
-```
-
-That's it. Claude generates an HTML file you can open in any browser. Iterate by chat: "add Redis", "swap Postgres for MySQL", "highlight the auth path".
 
 ## Using the output
 
@@ -395,8 +405,8 @@ Use these labels in prompts or JSON IR when the exact technology matters. The ge
 
 - **Styling:** CSS custom properties on `:root` + `[data-theme="light"]`; SVG elements reference semantic classes (`c-frontend`, `t-muted`, `a-emphasis`, etc.). Toggling `data-theme` on `<html>` re-themes the entire diagram including gradient, grid, arrows, and mask rects.
 - **Export pipeline:** The SVG is cloned, host `<style>` is inlined, and current theme variables are resolved and written into a `:root` rule on the clone. For raster formats the clone's `width`/`height` are set to `4 × viewBox` so the browser rasterizes the vectors at target resolution natively; the canvas is sized to match and the image is drawn at natural size (no bitmap upsampling). `toBlob(mime)` then produces the file. JPEG gets an explicit background fill since it has no alpha. If the target resolution would exceed the browser's canvas limits, the pipeline automatically falls back to 3× or 2× so the export still succeeds.
-- **Self-contained output:** Single HTML file, Google Fonts link + inline SVG + ~19 KB of embedded JS. No build step, no JS framework, no server — the generated HTML itself has zero dependencies (the typed renderers need `npm install` for ajv, see [Install](#1-install-the-skill)).
-- **Output checks:** `bin/archify.mjs validate`, renderer layout checks, and `scripts/check-render-output.mjs` validate generated diagrams before delivery: schema validity when available, finite SVG values, no accidental two-point diagonal arrows, and no arrow segments crossing the legend.
+- **Self-contained output:** Single HTML file, Google Fonts link + inline SVG + ~19 KB of embedded JS. No build step, no JS framework, no server. The generated HTML and the distributed renderer have zero runtime dependencies.
+- **Output checks:** `bin/archify.mjs validate`, renderer layout checks, and `scripts/check-render-output.mjs` validate generated diagrams before delivery: schema validity, finite SVG values, no accidental two-point diagonal arrows, and no arrow segments crossing the legend.
 - **Browser support:** Any modern browser (Chrome, Safari, Firefox, Edge). Needs `Image` + `canvas.toBlob` with `image/webp` support for WebP export.
 
 ## Attribution
